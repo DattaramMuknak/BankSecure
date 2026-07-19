@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - BankSecure</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-gray-50 min-h-screen">
+<div class="max-w-5xl mx-auto p-6">
+  <div class="flex justify-between items-center bg-white p-5 rounded-2xl shadow">
+    <h1 class="text-xl font-bold">🏦 BankSecure Dashboard</h1><div class="flex gap-3"><span id="userEmail" class="text-sm text-gray-600"></span><button onclick="logout()" class="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm">Logout</button></div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+    <div class="bg-white p-6 rounded-2xl shadow"><p class="text-gray-500 text-sm">Total Balance</p><p id="totalBal" class="text-3xl font-bold mt-2">₹ 0</p></div>
+    <div class="bg-white p-6 rounded-2xl shadow"><p class="text-gray-500 text-sm">Accounts</p><p id="totalAcc" class="text-3xl font-bold mt-2">0</p></div>
+    <div class="bg-white p-6 rounded-2xl shadow"><p class="text-gray-500 text-sm">User ID</p><p id="userId" class="text-xl font-bold mt-2">-</p></div>
+  </div>
+  <div class="bg-white p-6 rounded-2xl shadow mt-6">
+    <h2 class="font-semibold mb-4">My Accounts</h2>
+    <div class="flex gap-3 mb-4">
+      <input id="holderName" placeholder="Account Holder Name" class="border rounded-xl px-4 py-2 flex-1">
+      <input id="initBal" placeholder="Initial Balance" type="number" class="border rounded-xl px-4 py-2 w-40">
+      <button onclick="createAcc()" class="bg-blue-600 text-white px-6 py-2 rounded-xl">Create</button>
+    </div>
+    <table class="w-full text-sm"><thead><tr class="text-gray-400 border-b"><th class="text-left py-2">ID</th><th class="text-left">Name</th><th class="text-left">Balance</th><th>Action</th></tr></thead><tbody id="accBody"></tbody></table>
+  </div>
+</div>
+<script>
+const user=JSON.parse(localStorage.getItem('user')||'null');
+if(!user) window.location='/';
+document.getElementById('userEmail').innerText=user.email; document.getElementById('userId').innerText=user.id;
+async function load(){const res=await fetch('/api/accounts'); const data=await res.json(); const tbody=document.getElementById('accBody'); tbody.innerHTML=''; let total=0; data.forEach(a=>{total+=a.balance; tbody.innerHTML+=`<tr class='border-b'><td class='py-3'>${a.id}</td><td>${a.accountHolderName}</td><td>₹ ${a.balance}</td><td class='flex gap-2'><button onclick='deposit(${a.id})' class='px-3 py-1 bg-green-50 text-green-600 rounded-lg'>Deposit</button><button onclick='withdraw(${a.id})' class='px-3 py-1 bg-orange-50 text-orange-600 rounded-lg'>Withdraw</button><button onclick='delAcc(${a.id})' class='px-3 py-1 bg-red-50 text-red-600 rounded-lg'>Delete</button></td></tr>`}); document.getElementById('totalBal').innerText='₹ '+total; document.getElementById('totalAcc').innerText=data.length;}
+async function createAcc(){const name=document.getElementById('holderName').value; const bal=parseFloat(document.getElementById('initBal').value)||0; await fetch('/api/accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accountHolderName:name,balance:bal})}); load();}
+async function deposit(id){const amt=prompt('Deposit amount:'); if(!amt) return; await fetch(`/api/accounts/${id}/deposit`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:parseFloat(amt)})}); load();}
+async function withdraw(id){const amt=prompt('Withdraw amount:'); if(!amt) return; await fetch(`/api/accounts/${id}/withdraw`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:parseFloat(amt)})}); load();}
+async function delAcc(id){if(!confirm('Delete?'))return; await fetch(`/api/accounts/${id}`,{method:'DELETE'}); load();}
+function logout(){localStorage.clear(); window.location='/';}
+load();
+</script>
+</body></html>
